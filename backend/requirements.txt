@@ -1,0 +1,17 @@
+# FastAPI 框架
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+websockets==12.0
+
+# AI/ML 相关
+ultralytics==8.1.0
+opencv-python==4.9.0.80
+numpy==1.26.3
+torch
+torchvision
+
+# MySQL 数据库
+pymysql==1.1.0
+dbutils==3.0.3
+cryptography==42.0.0
