@@ -1,0 +1,27 @@
+# 依赖
+node_modules/
+__pycache__/
+*.pyc
+
+# 构建输出
+dist/
+build/
+backend/static/
+
+# 环境
+.env
+.venv
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 日志和数据
+*.log
+backend/data/history/
+
+# 系统文件
+.DS_Store
+Thumbs.db

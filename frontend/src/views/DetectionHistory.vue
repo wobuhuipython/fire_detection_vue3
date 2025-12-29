@@ -194,7 +194,7 @@ const clearHistory = async () => {
 
 const goPage = (page) => loadHistory(page)
 const showPreview = (record) => { previewRecord.value = record }
-const getImageUrl = (path) => `http://${window.location.hostname}:8000/static/history/${path}`
+const getImageUrl = (path) => `/static/history/${path}`
 const getSourceLabel = (type) => ({ camera: '摄像头', video: '视频', image: '图片' }[type] || type)
 const formatTime = (isoString) => isoString ? new Date(isoString).toLocaleString('zh-CN') : ''
 

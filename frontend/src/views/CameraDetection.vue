@@ -37,8 +37,8 @@
               停止检测
             </button>
             <!-- 置信度按钮 -->
-            <div class="dropdown-wrapper">
-              <button class="btn btn-option" @click.stop="showConfMenu = !showConfMenu">
+            <div class="dropdown-wrapper" @click.stop>
+              <button class="btn btn-option" @click="showConfMenu = !showConfMenu">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
                 {{ (confidenceThreshold * 100).toFixed(0) }}%
               </button>
@@ -146,7 +146,10 @@ const stopDetection = () => {
 }
 
 const connectWebSocket = () => {
-  const wsUrl = `ws://${window.location.hostname}:8000/ws/inference`
+  // 自动适配协议和端口
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const host = window.location.host  // 包含端口号
+  const wsUrl = `${protocol}//${host}/ws/inference`
   websocket = new WebSocket(wsUrl)
   websocket.onopen = () => { isRunning.value = true; isLoading.value = false; ElMessage.success('连接成功'); startSendingFrames() }
   websocket.onmessage = (e) => { pendingResponse = false; const d = JSON.parse(e.data); if (d.type === 'result') handleResult(d.data) }
@@ -178,7 +181,11 @@ const startSendingFrames = () => {
 
 const handleResult = (r) => {
   fps.value = r.fps || 0; processingTime.value = Math.round((r.processing_time || 0) * 1000)
-  rawDetections.value = r.stable_detections || []; drawDetections(r)
+  // 合并稳定检测和实时检测结果
+  const stableDets = r.stable_detections || []
+  const realtimeDets = r.detections || []
+  rawDetections.value = stableDets.length > 0 ? stableDets : realtimeDets
+  drawDetections(r)
 }
 
 const drawDetections = (r) => {
@@ -186,7 +193,7 @@ const drawDetections = (r) => {
   const ctx = c.getContext('2d'); c.width = v.offsetWidth; c.height = v.offsetHeight
   ctx.clearRect(0, 0, c.width, c.height)
   const sx = c.width / (r.image_size?.width || 640), sy = c.height / (r.image_size?.height || 480)
-  const dets = (r.stable_detections || []).filter(d => d.confidence >= confidenceThreshold.value)
+  const dets = rawDetections.value.filter(d => d.confidence >= confidenceThreshold.value)
   dets.forEach(d => {
     const [x1,y1,x2,y2] = d.bbox, sx1=x1*sx, sy1=y1*sy, sx2=x2*sx, sy2=y2*sy
     const isFire = d.class_name.toLowerCase().includes('fire'), color = isFire ? '#ef4444' : '#6b7280'

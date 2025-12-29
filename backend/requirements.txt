@@ -5,7 +5,7 @@ python-multipart==0.0.6
 websockets==12.0
 
 # AI/ML 相关
-ultralytics==8.1.0
+ultralytics==8.3.241
 opencv-python==4.9.0.80
 numpy==1.26.3
 torch
