@@ -162,7 +162,14 @@ const startSendingFrames = () => {
   const sendFrame = () => {
     if (!isRunning.value || !websocket || websocket.readyState !== WebSocket.OPEN) return
     const now = Date.now()
-    if (now - lastSendTime < FRAME_INTERVAL || pendingResponse) { animationId = requestAnimationFrame(sendFrame); return }
+    // 如果等待响应超过2秒，重置pendingResponse防止卡死
+    if (pendingResponse && now - lastSendTime > 2000) {
+      pendingResponse = false
+    }
+    if (now - lastSendTime < FRAME_INTERVAL || pendingResponse) { 
+      animationId = requestAnimationFrame(sendFrame)
+      return 
+    }
     const v = videoRef.value
     if (v && v.videoWidth > 0) {
       tc.width = 640; tc.height = 480; tx.drawImage(v, 0, 0, 640, 480)
@@ -172,7 +179,8 @@ const startSendingFrames = () => {
         conf_threshold: confidenceThreshold.value,
         source_type: 'camera'
       }))
-      pendingResponse = true; lastSendTime = now
+      pendingResponse = true
+      lastSendTime = now
     }
     animationId = requestAnimationFrame(sendFrame)
   }
