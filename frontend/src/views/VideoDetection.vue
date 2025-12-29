@@ -61,13 +61,13 @@
               <div class="dropdown-wrapper" @click.stop>
                 <button class="btn btn-option" @click="showConfMenu = !showConfMenu; showSpeedMenu = false">
                   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                  {{ (confidenceThreshold * 100).toFixed(0) }}%
+                  {{ (Number(confidenceThreshold) * 100).toFixed(0) }}%
                 </button>
                 <div class="dropdown-menu conf-menu" v-show="showConfMenu">
                   <div class="conf-slider-wrap">
                     <span class="conf-label">置信度阈值</span>
-                    <input type="range" v-model="confidenceThreshold" min="0.1" max="0.9" step="0.05" class="conf-slider" />
-                    <span class="conf-value">{{ (confidenceThreshold * 100).toFixed(0) }}%</span>
+                    <input type="range" :value="confidenceThreshold" @input="onConfidenceChange" min="0.1" max="0.9" step="0.05" class="conf-slider" />
+                    <span class="conf-value">{{ (Number(confidenceThreshold) * 100).toFixed(0) }}%</span>
                   </div>
                 </div>
               </div>
@@ -170,6 +170,10 @@
     showSpeedMenu.value = false
   }
 
+  const onConfidenceChange = (e) => {
+    confidenceThreshold.value = parseFloat(e.target.value)
+  }
+
   const startDetection = () => { if (!videoFile.value) return; connectWebSocket() }
 
   const stopDetection = () => {
@@ -210,7 +214,6 @@
 
   const startSendingFrames = () => {
     const tc = document.createElement('canvas'), tx = tc.getContext('2d')
-    let pendingTimeout = null
     
     const sendFrame = () => {
       if (!isRunning.value || !websocket || websocket.readyState !== WebSocket.OPEN) return
@@ -227,7 +230,12 @@
       }
       
       const v = videoRef.value
-      if (v && v.videoWidth > 0 && !v.paused) {
+      // 如果视频被意外暂停，自动恢复播放
+      if (v && v.paused && isRunning.value) {
+        v.play().catch(() => {})
+      }
+      
+      if (v && v.videoWidth > 0) {
         tc.width = 640; tc.height = Math.round(640 * v.videoHeight / v.videoWidth)
         tx.drawImage(v, 0, 0, tc.width, tc.height)
         websocket.send(JSON.stringify({ 
